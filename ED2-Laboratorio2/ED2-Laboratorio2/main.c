@@ -13,14 +13,23 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>	// Librería de interrupciones
 #include <stdint.h>
+#include <stdio.h>
 #include "LCD_8bits/LCD_8bits.h"
+#include "ADC/ADC_libreria.h"
 
 /****************************************/
 // Prototipos de función
 void setup();
+void write_float();
 
 // Variables globales
+volatile uint16_t POT1 = 0;
+volatile uint16_t POT2 = 0;
+volatile uint8_t canal_ADC = 0;
 
+uint8_t entero_POT1 = 0;
+uint8_t decimal_POT1 = 0;
+uint8_t centesima_POT1 = 0;
 
 /****************************************/
 // Función principal
@@ -28,11 +37,19 @@ void setup();
 int main(void)
 {
 	setup();
-	// Prueba de escritura
-	set_cursor_LCD(0, 0);
-	write_string_LCD("HOLA");
+	
     while (1) 
-    {
+    {	
+		set_cursor_LCD(0, 0);
+		char buffer[32];
+		write_float();
+		sprintf(buffer, "S1: %d.%02dV", entero_POT1, decimal_POT1);
+		write_string_LCD(buffer);
+		
+		set_cursor_LCD(1, 0);
+		write_float();
+		sprintf(buffer, "S2: %d", POT2);
+		write_string_LCD(buffer);
 		_delay_ms(100);
     }
 }
@@ -53,8 +70,25 @@ void setup(void)
 	LCD_init8();
 	clear_LCD();
 	
+	// Inicializacion de ADC
+	ADC_Init(canal_ADC);
 	sei();
+}
+
+void write_float(){
+	float conversion = ((POT1 * 5.00)/1023);
+	entero_POT1 = conversion;
+	decimal_POT1 = (conversion - entero_POT1) *100;
 }
 
 /****************************************/
 // Subrutinas de Interrupcion
+ISR(ADC_vect){				// Leer canal y asignarlo al POT correspondiente
+	switch (canal_ADC){
+		case 0: POT1 = ADC; break;
+		case 1: POT2 = ADC; break;
+	}
+	canal_ADC = (canal_ADC + 1) % 2;
+	ADMUX = (ADMUX & 0xF0) | (canal_ADC & 0x03);
+	ADCSRA |= (1 << ADSC); // Volver a iniciar conversion
+}
