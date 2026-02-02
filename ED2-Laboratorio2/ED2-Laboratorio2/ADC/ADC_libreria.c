@@ -1,9 +1,12 @@
 /*
+ * Universidad del Valle de Guatemala
+ * IE3054: Electrónica Digital 2
  * ADC_libreria.c
- *
- * Created: 27/01/2026
- *  Author: ialma
- */ 
+ * Autor: Alma Lisbeth Mata Ixcayau
+ * Proyecto: Laboratorio 2 - Digital 2
+ * Descripcion: Librería de configuración del ADC
+ * Creado: 27/01/2026
+*/
 
 #include "ADC_libreria.h"
 

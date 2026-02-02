@@ -16,16 +16,21 @@
 #include <stdio.h>
 #include "LCD_8bits/LCD_8bits.h"
 #include "ADC/ADC_libreria.h"
+#include "UART/UART.h"
 
 /****************************************/
 // Prototipos de función
 void setup();
 void write_float();
+void UART_counter(void);
 
 // Variables globales
 volatile uint16_t POT1 = 0;
 volatile uint16_t POT2 = 0;
 volatile uint8_t canal_ADC = 0;
+volatile uint8_t received_RX = 0;
+volatile uint8_t dato_ENVIADO = 0;
+volatile uint8_t contador_UART = 0;
 
 uint8_t entero_POT1 = 0;
 uint8_t decimal_POT1 = 0;
@@ -42,13 +47,13 @@ int main(void)
     {	
 		set_cursor_LCD(0, 0);
 		char buffer[32];
-		write_float();
-		sprintf(buffer, "S1: %d.%02dV", entero_POT1, decimal_POT1);
+		sprintf(buffer, " S1     S2   S3");
 		write_string_LCD(buffer);
 		
 		set_cursor_LCD(1, 0);
 		write_float();
-		sprintf(buffer, "S2: %d", POT2);
+		UART_counter();
+		sprintf(buffer, "%d.%02dV  %04d  %03d", entero_POT1, decimal_POT1, POT2, contador_UART);
 		write_string_LCD(buffer);
 		_delay_ms(100);
     }
@@ -72,6 +77,8 @@ void setup(void)
 	
 	// Inicializacion de ADC
 	ADC_Init(canal_ADC);
+	// Inicializacion de UART
+	UART_init();
 	sei();
 }
 
@@ -81,6 +88,20 @@ void write_float(){
 	decimal_POT1 = (conversion - entero_POT1) *100;
 }
 
+void UART_counter(void){
+	if (dato_ENVIADO)
+	{
+		dato_ENVIADO = 0;
+		if (received_RX == '+')
+		{
+			contador_UART++;
+		}
+		else if (received_RX == '-')
+		{
+			contador_UART--;
+		}
+	}
+}
 /****************************************/
 // Subrutinas de Interrupcion
 ISR(ADC_vect){				// Leer canal y asignarlo al POT correspondiente
@@ -91,4 +112,9 @@ ISR(ADC_vect){				// Leer canal y asignarlo al POT correspondiente
 	canal_ADC = (canal_ADC + 1) % 2;
 	ADMUX = (ADMUX & 0xF0) | (canal_ADC & 0x03);
 	ADCSRA |= (1 << ADSC); // Volver a iniciar conversion
+}
+
+ISR(USART_RX_vect){
+	received_RX = UDR0;
+	dato_ENVIADO = 1;
 }

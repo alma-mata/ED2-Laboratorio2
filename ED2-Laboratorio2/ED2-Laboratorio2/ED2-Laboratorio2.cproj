@@ -135,6 +135,12 @@
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="UART\UART.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="UART\UART.h">
+      <SubType>compile</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="LCD_8bits" />
