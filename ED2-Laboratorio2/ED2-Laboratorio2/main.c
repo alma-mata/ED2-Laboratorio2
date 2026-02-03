@@ -14,47 +14,46 @@
 #include <avr/interrupt.h>	// Librería de interrupciones
 #include <stdint.h>
 #include <stdio.h>
-#include "LCD_8bits/LCD_8bits.h"
-#include "ADC/ADC_libreria.h"
-#include "UART/UART.h"
+#include "LCD_8bits/LCD_8bits.h"	// Librería para manejo de LCD
+#include "ADC/ADC_libreria.h"		// Librería ADC
+#include "UART/UART.h"				// Librería UART
 
 /****************************************/
 // Prototipos de función
-void setup();
-void write_float();
-void UART_counter(void);
+void setup();				// Configuración general
+void write_float();			// Conversión de ADC a decimal 0-5V
+void UART_counter(void);	// Contador de entrada de UART
 
 // Variables globales
-volatile uint16_t POT1 = 0;
-volatile uint16_t POT2 = 0;
-volatile uint8_t canal_ADC = 0;
-volatile uint8_t received_RX = 0;
-volatile uint8_t dato_ENVIADO = 0;
-volatile uint8_t contador_UART = 0;
+volatile uint16_t POT1 = 0;			// Entrada Potenciometro 1 ADC
+volatile uint16_t POT2 = 0;			// Entrada potenciometro 2 ADC
+volatile uint8_t canal_ADC = 0;		// canal para configuración ADC
+volatile uint8_t received_RX = 0;	// Dato recibido del UART
+volatile uint8_t dato_ENVIADO = 0;	// Bandera de dato enviado UART
+volatile uint8_t contador_UART = 0; // Contador UART
 
-uint8_t entero_POT1 = 0;
-uint8_t decimal_POT1 = 0;
-uint8_t centesima_POT1 = 0;
+uint8_t entero_POT1 = 0;			// Parte entero del valor del potenciometro
+uint8_t decimal_POT1 = 0;			// Parte decimal
 
 /****************************************/
 // Función principal
 
 int main(void)
 {
-	setup();
+	setup();		// Se llama a la configuración general
 	
     while (1) 
     {	
-		set_cursor_LCD(0, 0);
-		char buffer[32];
-		sprintf(buffer, " S1     S2   S3");
-		write_string_LCD(buffer);
+		set_cursor_LCD(0, 0);		// Se coloca cursor en fila 0
+		char buffer[32];			// Variable para cadena de salida
+		sprintf(buffer, " S1     S2   S3");	
+		write_string_LCD(buffer);			// Se escribe en LCD
 		
-		set_cursor_LCD(1, 0);
-		write_float();
-		UART_counter();
+		set_cursor_LCD(1, 0);		// Se coloca cursor en fila 1
+		write_float();				// Conversion valor POT1
+		UART_counter();				// Contador UART
 		sprintf(buffer, "%d.%02dV  %04d  %03d", entero_POT1, decimal_POT1, POT2, contador_UART);
-		write_string_LCD(buffer);
+		write_string_LCD(buffer);	// Se escribe en la LCD
 		_delay_ms(100);
     }
 }
@@ -82,13 +81,13 @@ void setup(void)
 	sei();
 }
 
-void write_float(){
+void write_float(){ // Función que convierte el valor ADC (0-1023) a voltaje (0-5v)
 	float conversion = ((POT1 * 5.00)/1023);
 	entero_POT1 = conversion;
 	decimal_POT1 = (conversion - entero_POT1) *100;
 }
 
-void UART_counter(void){
+void UART_counter(void){ // Aumenta el contador UART si se ha mandado el carácter específico
 	if (dato_ENVIADO)
 	{
 		dato_ENVIADO = 0;
@@ -114,7 +113,7 @@ ISR(ADC_vect){				// Leer canal y asignarlo al POT correspondiente
 	ADCSRA |= (1 << ADSC); // Volver a iniciar conversion
 }
 
-ISR(USART_RX_vect){
+ISR(USART_RX_vect){			// Interrupción UART
 	received_RX = UDR0;
 	dato_ENVIADO = 1;
 }
